@@ -1,16 +1,6 @@
 /*
-    Developed by: Giovanni Tshibangu & Dejah Murray 
-    BB Team: 1
-    Project name: Snake Part 1
-    Date: 6/28/2022
-
-    Part 1 Objective:
-    Intermediate deliverable (due 06/30/2022) needs to have the following functionality:
-    * The game starts with the snake of size 5 moving right
-    * Snake movement can be controlled in all directions
-    * Snake does not grow
-    * Snake pit border is visible
-    * No trophies
+    By Roland Van Duine & Victor Setaro 
+    This is a snake game that is played in the terminal. The user uses the arrow keys to control the snake's movement.
 */
 
 // Libraries needed for this project
@@ -43,9 +33,7 @@ struct Fruit{
     int x, y;
 };
 
-
-
-// Global variables
+// Declaring all global variables
 int speed, snakeLength, numNewBodies, numFruit, FruitExpireTime;
 float speedRate = 0.98;
 bool gameOver = false, exitGame = false;
@@ -54,54 +42,47 @@ struct Snake *head;
 struct Fruit Fruit;
 time_t FruitGenTime, now;
 
-// Declaring all function prototypes 
-void buildGame();                // This function sets the game and initial snake position ect...
-void updateDirection(int);       // Change the snake position based on user input.
-void guideSnake();               // More snake control, such as head movement and collision handler
-void buildScreen();              // Build the pit and overall gameplay area
-void gameOverMessageScreen();    // This function is called when you kill the snake
-void FruitGenrator();            // This function Generates Trophies
+void init();                   // Initialize the game and sets the snake's intial position in the pit
+void updateDirection(int);     // Updates the direction of the snake
+void snakeMove();              // Control the snake
+void render();                 // Builds the screen
+void endMessage();             // Game over message
+void fruitGen();               // Generates the fruit
 
-
-// #### Main Function #####
 /*
  Function : main()
- Name: Dejah Murray
+ Name: Victor Setaro
  Functionality: Driver function
 */
 int main(){
-    buildGame();       // builds the game and sets the snake's intial position in the pit
-    // loop repeats until user presses 'x' or 'X', which will set gameOver = 1
+    init();       
+    // loop repeats until gameOver = 1, when the snake dies or end key is pressed
     while(!exitGame){
         if(gameOver){
-            gameOverMessageScreen("YOU LOSE!\n");  // game over message
+            endMessage("Game over\n");  // game over message
         }
         int keypress = getch();
         updateDirection(keypress);
-        guideSnake();
-        buildScreen();
+        snakeMove();
+        render();
 	    usleep(speed);      // pause between snake movement. The speed is proportional to its length.
                             // the longer the snake, the faster it goes
     }
     endwin();    // turn off curses
     return 0;   
 }
-// ##### updateDirection function #####
+
 /*
  Function : updateDirection()
- Name: Dejah Murray
- Functionality: This function takes in the user's key presses as input and updates the direction of the snake accordingly.
+ Name: Victor Setaro
+ Functionality: Control the direction of the snake 
 */
 void updateDirection(int keypress){
-    /*  
-        Switch case to change the direction of the snake based on the user's key presses
-        The game will be over if the snake is moving in one direction and the user tries to make the snake move in the opposite direction.
-        ie. Snake moving DOWN and the user presses the UP arrow
-    */
+
     switch (keypress) {     
         case KEY_UP:    
             if(currDir == DOWN){
-                gameOverMessageScreen("You lose! Snakes do not go BACKWARDS...\n");
+                endMessage("Game over\n");
                 break;
             }
             currDir = UP;
@@ -109,8 +90,7 @@ void updateDirection(int keypress){
 
         case KEY_DOWN:
             if(currDir == UP){
-                    // reverse
-                    gameOverMessageScreen("You lose! Snakes do not go BACKWARDS...\n");
+                    endMessage("Game over\n");
                     break;
                 }
                 currDir = DOWN;
@@ -118,8 +98,7 @@ void updateDirection(int keypress){
 
         case KEY_LEFT:
             if(currDir == RIGHT){
-                // reverse
-                    gameOverMessageScreen("You lose! Snakes do not go BACKWARDS...\n");
+                    endMessage("Game over\n");
                     break;
             }
             currDir = LEFT;
@@ -127,8 +106,7 @@ void updateDirection(int keypress){
         
         case KEY_RIGHT:
             if(currDir == LEFT){
-                 // reverse
-                    gameOverMessageScreen("You lose! Snakes do not go BACKWARDS...\n");
+                    endMessage("Game over\n");
                     break;
             }
             currDir = RIGHT;
@@ -139,15 +117,14 @@ void updateDirection(int keypress){
                 exitGame = 1;
     }
 }
-// ### guideSnake function ###
+
 /*
- Function : guideSnake()
- Name: Dejah Murray
- Functionality: Allows the user to control the direction of the snake and handles 
- collision events ie. snake runs into the border, runs into itself, user tries to reverse snake direction.
+ Function : snakeMove()
+ Name: Victor Setaro
+ Functionality: Control the snake's movement
 */
-void guideSnake(){
-     // Creates a new head for the snake
+void snakeMove(){
+     // Snake head
      struct Snake *newHead;
      newHead = (struct Snake*) malloc(sizeof(struct Snake));
      newHead->next = head;
@@ -169,13 +146,13 @@ void guideSnake(){
     // Ends the game if the snake hits the border/wall of the snake pit
     if (head->x >= WIDTH || head->x <= 0 || head->y >= HEIGHT || head->y <= 0) {
         gameOver = 1;   // ends the game
-        gameOverMessageScreen("You hit the wall loser! \n");
+        endMessage("Game over \n");
     }
     // if the snake eat Fruit
     if (head->x == Fruit.x && head->y == Fruit.y) {
         numNewBodies += numFruit;
         snakeLength += numFruit;
-        FruitGenrator();        
+        fruitGen();        
     }
     // Ends the game if the snake hits itself
     struct Snake *currBody;
@@ -185,7 +162,7 @@ void guideSnake(){
         // if the snake's head collides with a part of its body, end the game
         if (currBody->next->x == head->x && currBody->next->y == head->y) {
             gameOver = 1;    // ends the game
-            gameOverMessageScreen("You lose! Stop trying to eat yourself :( \n");
+            endMessage("Game over \n");
         }
         currBody = currBody->next;
     }
@@ -201,17 +178,16 @@ void guideSnake(){
     }
      }
 
-// ################ gameOverMessageScreen FUNCTION #################
 /*
- Function : gameOverMessageScreen()
- Name: Giovanni Tshibangu
+ Function : endMessage()
+ Name: Roland Van Duine
  functionality  :Display Gamoe over message on the screen
 */
 
-void gameOverMessageScreen(char* result) {
+void endMessage(char* result) {
     clear();    // clear terminal 
     mvprintw(10, 50, result);    // print the scoreboard
-    mvprintw(12, 42, "Game Over! Hit any key to close game");   // print text to terminal
+    mvprintw(12, 42, "Game over. Press a key to end");   // print text to terminal
     refresh();
     sleep(4);   // Wait 4 second
     getchar();  // get any key input from user keyboard to Quit the Screen
@@ -219,13 +195,12 @@ void gameOverMessageScreen(char* result) {
     exit(0);    // QUIT the program or KILL IT
 }
 
-// ################ buildScreen FUNCTION #################
 /*
- Function : buildScreen()
- Name: Giovanni Tshibangu
+ Function : render()
+ Name: Roland Van Duine
  functionality  :Build the pit and overall Gameplay Area 
 */
-void buildScreen() {
+void render() {
     // Draw Border
     move(0, 0); // move cursor to the uppder left corner so border will be draw in the right position
     for (int i = 0; i <= HEIGHT; i++) {
@@ -252,7 +227,7 @@ void buildScreen() {
     if (remainingTime <= 0) {
         mvaddch(Fruit.y, Fruit.x, ' '); // clear current Fruit from the screen
         remainingTime = 0;
-        FruitGenrator();
+        fruitGen();
     } 
 
     //Stat of the game
@@ -265,21 +240,19 @@ void buildScreen() {
     float progress = (length / halfPerimeter) * 100;
     mvprintw(4, WIDTH + 2, "Progress: %d %%", (int)progress);
     if ((int)progress >= 100) {
-        gameOverMessageScreen("You won!!!\n");     // User Won!!
+        endMessage("You won!!!\n");     // User Won!!
     }
    // render
     move(HEIGHT + 1, 0); // move cursor out of the game screen 
     refresh(); // render screen, screen buffer -> real screen
 }
 
-
-// ################ FruitGenrator FUNCTION #################
 /*
- Function : FruitGenrator()
- Name: Giovanni Tshibangu
+ Function : fruitGen()
+ Name: Roland Van Duine
  functionality  :This funtion generates fruits on the screen for the snake to eat.
 */
-void FruitGenrator() {
+void fruitGen() {
     bool overlapping = true;
     /* Check if Fruit spawn on the location already taken by snake
      because the wtropthy can not appear on a space already occupy by the snake.*/
@@ -312,14 +285,34 @@ void FruitGenrator() {
 }
 
 
-// ################ buildGame FUNCTION #################
 /*
- Function : buildGame()
- Name: Giovanni Tshibangu.
+ Function : init()
+ Name: Roland Van Duine.
  functionality  : This function set the game and init snake position and Direction ect...
 */
-void buildGame(){
+void init(){
     clear();    // clear the screen/ terminal
+
+    srand(time(NULL));
+
+    int random_num = rand() % 4;
+    
+    // map the random number to a direction
+    enum Direction random_direction;
+    switch (random_num) {
+        case 0:
+            random_direction = LEFT;
+            break;
+        case 1:
+            random_direction = RIGHT;
+            break;
+        case 2:
+            random_direction = UP;
+            break;
+        case 3:
+            random_direction = DOWN;
+            break;
+    }
 
     // Initialize 
     initscr();  // start curses or init curse
@@ -332,27 +325,45 @@ void buildGame(){
     raw();  //disables line buffering and erase/kill character-processing 
 
     // Initialise Snake 
-    currDir =RIGHT;     // Start the snake movement to  RIGHT
-    gameOver = false;   // Game is not Over. This is because there is a while loop that's checking
-    speed = SPEED;      // Set the initial speed to the defined constant.
-    snakeLength = LENGTH;   // Set the initial LENGTH to the defined constant
+    currDir = random_direction;  // Start the snake movement to  random direction
+    gameOver = false;          // Game initial state.
+    speed = SPEED;             // Initial speed to the defined constant.
+    snakeLength = LENGTH;      // Initial LENGTH to the defined constant
 
     // Snake starts at the middle of the screen 
     int x = WIDTH/2;
     int y = HEIGHT/2;
 
     // Create the snake, This snake is basically a Linked LIST
-    struct Snake *currBody;
-    currBody = (struct Snake*) malloc(sizeof(struct Snake));
-    currBody->next = NULL;
-    currBody->x = x - (LENGTH - 1);
-    currBody->y = y;
+    head = (struct Snake*) malloc(sizeof(struct Snake));
+    head->next = NULL;
+    head->x = x;
+    head->y = y;
 
-    for (int i = LENGTH - 2; i >= 0; i--) {
-        head = (struct Snake*) malloc(sizeof(struct Snake));
-        head->next = currBody;
-        head->x = x - i;
-        head->y = y;
-        currBody = head;    
+    // Create the rest of the snake body behind the head in the direction it is facing
+    struct Snake *currBody = head;
+    for (int i = 1; i < LENGTH; i++) {
+        struct Snake *newBody = (struct Snake*) malloc(sizeof(struct Snake));
+        newBody->next = NULL;
+        switch (currDir) {
+            case LEFT:
+                newBody->x = x + i;
+                newBody->y = y;
+                break;
+            case RIGHT:
+                newBody->x = x - i;
+                newBody->y = y;
+                break;
+            case UP:
+                newBody->x = x;
+                newBody->y = y + i;
+                break;
+            case DOWN:
+                newBody->x = x;
+                newBody->y = y - i;
+                break;
+        }
+        currBody->next = newBody;
+        currBody = newBody;
     }
 }
