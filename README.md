@@ -1,5 +1,10 @@
 # Snake Game
 
+![image](https://github.com/colmak/ultimate-snake-game/assets/69098858/838aa505-c618-4f83-84b4-3ae0149c7178)
+
+![image](https://github.com/colmak/ultimate-snake-game/assets/69098858/185a452e-d2ac-4447-8017-68262941240a)
+
+
 By Roland Van Duine & Victor Setaro
 
 This is a snake game that is played in the terminal. The user uses the arrow keys to control the snake's movement.
